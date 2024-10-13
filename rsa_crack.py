@@ -1,37 +1,85 @@
 import sys
 
 def read_input():
-    input_data = sys.stdin.read()  # Read all input from stdin
-    lines = input_data.splitlines()  # Split the input into lines
+    lines = sys.stdin.buffer.readlines()  # Read all lines from stdin
+    ascii_values = []  # Initialize an empty list to store ASCII values
 
-    if len(lines) < 2:
-        raise ValueError("Expected at least two lines of input.")
+    # Iterate through all but the last line to print and store ASCII values
+    for line in lines[:-1]:
+        for byte in line:
+            ascii_values.append(byte)
 
-    encrypted_string = lines[0].strip()  # First line is the encrypted string
+    # Process the last line to extract two integers
+    last_line = lines[-1].strip()  # Get the last line and strip whitespace
+    integers = list(map(int, last_line.split()))  # Split and convert to integers
 
-    # Split the last line into integers
-    last_line = lines[-1].strip().split()  # Get the last line and split it into components
-    if len(last_line) < 2:
-        raise ValueError("Expected two integers in the last line.")
+    if len(integers) == 2:
+        print(f"Stored integers: {integers[0]}, {integers[1]}")
+    else:
+        print("Last line must contain exactly two integers.")
+
+    # Print the stored ASCII values
+    print(f"Stored ASCII values: {ascii_values}")
 
     # Convert the integers from string to int
-    int1 = int(last_line[0])  # First integer
-    int2 = int(last_line[1])  # Second integer
+    e = integers[0]  # First integer
+    n = integers[1]  # Second integer
 
-    return encrypted_string, int1, int2
+    return ascii_values, e, n
+
+def rsa_decrypt(ciphertext, e, n):
+    # Factor n to get p and q
+    p = 0
+    q = 0
+
+    for i in range(2, n):
+        if n % i == 0:
+            p = i
+            q = n // i
+            break
+    
+    print(f"p: {p}")
+    print(f"q: {q}")
+
+    # Compute Euler's totient function
+    phi = (p - 1) * (q - 1)
+    print(f"phi: {phi}")
+
+    # Compute private key
+    d = 0
+    for i in range(2, phi):
+        if (i * e) % phi == 1:
+            d = i
+            break
+    
+    print(f"Private key: {d}")
+
+    # Decrypt the ciphertext
+    decrypted_message = []
+    for c in ciphertext:
+        m = modular_exponentiation(c, d, n)
+        decrypted_message.append(m)
+    
+    # Convert decrypted ASCII values back to characters and print the message
+    decrypted_chars = ''.join(chr(m) for m in decrypted_message)
+    print("Decrypted message:", decrypted_chars)
+
+def modular_exponentiation(base, exp, mod):
+    # Perform modular exponentiation: base^exp % mod using the "square and multiply" method
+    result = 1
+    base = base % mod
+    while exp > 0:
+        if exp % 2 == 1:  # If exp is odd, multiply base with the result
+            result = (result * base) % mod
+        exp = exp >> 1    # Right shift the exponent by 1
+        base = (base * base) % mod  # Square the base
+    return result
 
 if __name__ == "__main__":
-    encrypted_string, int1, int2 = read_input()
-    print(f"Encrypted String: {encrypted_string}")
-    print(f"Integer 1: {int1}")
-    print(f"Integer 2: {int2}")
+    encrypted_string, e, n = read_input()
+    print(f"Integer 1: {e}")
+    print(f"Integer 2: {n}")
 
-    def rsa_decrypt(encrypted_string, d, n):
-        decrypted_chars = []
-        for char in encrypted_string.split():
-            decrypted_char = chr(pow(int(char), d, n))
-            decrypted_chars.append(decrypted_char)
-        return ''.join(decrypted_chars)
+    print("Cracking the RSA encryption...")
 
-    decrypted_string = rsa_decrypt(encrypted_string, int1, int2)
-    print(f"Decrypted String: {decrypted_string}")
+    rsa_decrypt(encrypted_string, e, n)
